@@ -1,9 +1,6 @@
-# demo uart transmit and receive
-
 import time
-from bluetooth import ble, BluetoothError
+from bluetooth import ble
 
-import util
 from bleuartlib import BleUartDevice
 
 
@@ -28,7 +25,7 @@ try:
 
         if address == "CE:E5:E1:2F:81:3E":
 
-            print("Found BBC micro:bit [vavet]: {}".format(address))
+            print("Found BBC micro:bit [vepag]: {}".format(address))
             found_microbit = True
             break
 
@@ -54,18 +51,12 @@ try:
             time.sleep(0.1)
 
 except KeyboardInterrupt:
-
     print("********** END")
 
-except BluetoothError:
-    print("BLUETOOTH ERROR")
-
 except:
-
     print("********** UNKNOWN ERROR")
 
 finally:
-
     if bleUartDevice1 != None:
         bleUartDevice1.disconnect()
         bleUartDevice1 = None
