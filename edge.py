@@ -1,7 +1,7 @@
 # demo uart transmit and receive
 
 import time
-from bluetooth import ble
+from bluetooth import ble, BluetoothError
 
 import util
 from bleuartlib import BleUartDevice
@@ -56,6 +56,9 @@ try:
 except KeyboardInterrupt:
 
     print("********** END")
+
+except BluetoothError:
+    print("BLUETOOTH ERROR")
 
 except:
 
