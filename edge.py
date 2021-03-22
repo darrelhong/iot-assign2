@@ -5,8 +5,12 @@ from bleuartlib import BleUartDevice
 
 
 def bleUartReceiveCallback(data):
-
     print("Received data = {}".format(data))
+
+
+def poll(bleUartDevice):
+    bleUartDevice1.send('poll')
+    print("poll command sent")
 
 
 try:
@@ -40,14 +44,15 @@ try:
 
         while True:
 
-            response = input("Do you want to transmit command to micro:bit (Y/n) = ")
+            response = input("Do you want to transmit command to micro:bit (y/n) = ")
 
-            if response == "Y":
+            if response.lower() == "y":
 
                 command = input("Enter command to send = ")
                 bleUartDevice1.send(command)
                 print("Finished sending command...")
-
+            else: 
+                break
             time.sleep(0.1)
 
 except KeyboardInterrupt:
