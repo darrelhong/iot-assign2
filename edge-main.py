@@ -2,6 +2,8 @@ import serial
 import argparse
 import random
 import time
+from datetime import datetime
+import requests
 
 import paho.mqtt.client as mqtt
 
@@ -12,6 +14,31 @@ POLL_INTERVAL = 3 * 60  # 3 minutes
 
 # store mqtt messages to be processed
 message_cache = []
+
+conn = get_db()
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--port",
+    help="Microbit serial port",
+    type=str,
+    default="/dev/ttyACM0",
+)
+parser.add_argument("--station", help="Edge station name", type=str, default="alpha")
+parser.add_argument("--temp", help="Temperature threshold", type=int, default=30)
+parser.add_argument("--light", help="Light level threshold", type=int, default=50)
+parser.add_argument(
+    "--cloudhost",
+    help="Cloud server hostname",
+    type=str,
+    default="http://localhost:5001",
+)
+
+args = parser.parse_args()
+STATION_NAME = args.station
+TEMP_THRESHOLD = args.temp
+LIGHT_THRESHOLD = args.light
+CLOUD_HOST = args.cloudhost
 
 
 # serial helpers
@@ -51,31 +78,22 @@ def insert_sensor_data(conn, device, temp, light_level):
     conn.commit()
 
 
-def insert_fire_event(conn, station_name):
+def insert_fire_event(conn, station_name, event, time):
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO events(station, event_name) VALUES(? , 'Fire outbreak')",
-        [station_name],
+        "INSERT INTO events(station, event_name, time_recorded) VALUES(?,?,?)",
+        [station_name, event, time],
     )
     conn.commit()
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "--port",
-    help="Microbit serial port",
-    type=str,
-    default="/dev/ttyACM0",
-)
-parser.add_argument("--station", help="Edge station name", type=str, default="alpha")
-parser.add_argument("--temp", help="Temperature threshold", type=int, default=30)
-parser.add_argument("--light", help="Light level threshold", type=int, default=50)
-args = parser.parse_args()
-STATION_NAME = args.station
-TEMP_THRESHOLD = args.temp
-LIGHT_THRESHOLD = args.light
+# request helpers
+def send_event_cloud(station_name, event, time):
+    requests.post(
+        f"{CLOUD_HOST}/api/events/add",
+        json={"station": "alpha", "event_name": "fire outbreak", "time_recorded": time},
+    )
 
-conn = get_db()
 
 try:
     # mqtt
@@ -129,8 +147,11 @@ try:
                         insert_sensor_data(conn, values[0], temp, light_level)
 
                         if temp > TEMP_THRESHOLD and light_level > LIGHT_THRESHOLD:
+                            curr_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            event = "fire outbreak"
                             sendCommand(f"{STATION_NAME} fire")
-                            insert_fire_event(conn, STATION_NAME)
+                            insert_fire_event(conn, STATION_NAME, event, curr_time)
+                            send_event_cloud(STATION_NAME, event, curr_time)
 
                 while message_cache:
                     message = message_cache.pop().strip()
