@@ -11,6 +11,7 @@ from db import get_db
 
 TOPIC = "/fireeyeofthetiger"
 POLL_INTERVAL = 3 * 60  # 3 minutes
+POST_INTERVAL = 10 * 60  # 10 minutes
 
 # store mqtt messages to be processed
 message_cache = []
@@ -95,6 +96,17 @@ def send_event_cloud(station_name, event, time):
     )
 
 
+def send_values_cloud(conn):
+    cur = conn.execute("SELECT * FROM edge WHERE sent_to_cloud = 0")
+    rv = cur.fetchall()
+    cur.close()
+    result = [dict(item, station=STATION_NAME) for item in rv]
+    r = requests.post(f"{CLOUD_HOST}/api/sensors/add", json={"rows": result})
+    if r.text == "Success":
+        cur = conn.execute("UPDATE edge SET sent_to_cloud = 1 WHERE sent_to_cloud = 0")
+        conn.commit()
+        cur.close()
+
 try:
     # mqtt
     client_id = f"python-mqtt-{random.randint(0, 10000)}"
@@ -127,8 +139,9 @@ try:
                 print("Connected to micro:bit device {}...".format(mb))
 
             pollTime = float("-inf")
+            postTime = float("-inf")
             while True:
-                if not pollTime or time.time() - pollTime > POLL_INTERVAL:
+                if time.time() - pollTime > POLL_INTERVAL:
                     sendCommand(f"{STATION_NAME} poll")
                     pollTime = time.time()
 
@@ -160,6 +173,10 @@ try:
                         sendCommand(message)
                     elif message_arr[1] == "reset":
                         sendCommand(message)
+
+                if time.time() - postTime > POST_INTERVAL:
+                    postTime = time.time()
+                    send_values_cloud(conn)
 
                 time.sleep(0.1)
 
