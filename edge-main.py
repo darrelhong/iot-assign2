@@ -160,6 +160,7 @@ try:
                         insert_sensor_data(conn, values[0], temp, light_level)
 
                         if temp > TEMP_THRESHOLD and light_level > LIGHT_THRESHOLD:
+                            print("fire outbreak detected")
                             curr_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                             event = "fire outbreak"
                             sendCommand(f"{STATION_NAME} fire")
@@ -167,15 +168,19 @@ try:
                             send_event_cloud(STATION_NAME, event, curr_time)
 
                 while message_cache:
-                    message = message_cache.pop().strip()
-                    message_arr = message.split(" ")
-                    if message_arr[1] == "fire":
-                        sendCommand(message)
-                    elif message_arr[1] == "reset":
-                        sendCommand(message)
+                    try:
+                        message = message_cache.pop().strip()
+                        message_arr = message.split(" ")
+                        if message_arr[1] == "fire":
+                            sendCommand(message)
+                        elif message_arr[1] == "reset":
+                            sendCommand(message)
+                    except IndexError:
+                        print("Error processing message")
 
                 if time.time() - postTime > POST_INTERVAL:
                     postTime = time.time()
+                    print("sending values to cloud")
                     send_values_cloud(conn)
 
                 time.sleep(0.1)

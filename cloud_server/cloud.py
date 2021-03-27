@@ -1,6 +1,10 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, redirect, url_for
 
 from edge_server.db import query_db, get_db
+import paho.mqtt.publish as publish
+
+
+TOPIC = "/fireeyeofthetiger"
 
 # all routes are prefixed with /api
 cloud = Blueprint("cloud", __name__)
@@ -17,8 +21,12 @@ def index():
     return render_template("index.html", data=data)
 
 
-@cloud.route("/events")
+@cloud.route("/events", methods=["GET", "POST"])
 def events():
+    if request.method == "POST":
+        if "deactivate" in request.form:
+            publish.single(TOPIC, "all reset", hostname="broker.emqx.io")
+            return redirect(url_for("cloud.events"))
     data = query_db("SELECT * FROM events")
     return render_template("events.html", data=data)
 
@@ -36,7 +44,7 @@ def add_sensor_data():
                     row["device"],
                     row["temp"],
                     row["light_level"],
-                    row["time_recorded"]
+                    row["time_recorded"],
                 ),
             )
             conn.commit()
@@ -48,12 +56,9 @@ def add_event():
     data = request.get_json()
     with get_db() as conn:
         cur = conn.cursor()
-        cur.execute("INSERT INTO events(station, event_name, time_recorded) VALUES (?,?,?)",
-        (
-            data['station'],
-            data['event_name'],
-            data['time_recorded']
-        ))
+        cur.execute(
+            "INSERT INTO events(station, event_name, time_recorded) VALUES (?,?,?)",
+            (data["station"], data["event_name"], data["time_recorded"]),
+        )
         conn.commit()
-    return 'Success'
-
+    return "Success"

@@ -1,7 +1,14 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h3 class="is-size-3">Events</h3>
+<div class="columns is-vcentered">
+  <h3 class="is-size-3 column is-one-quarter">Events</h3>
+  <div class="column">
+    <form method="post">
+      <input class=" button is-warning is-rounded" type="submit" name="deactivate" value="Deactivate"> 
+    </form>
+  </div>
+</div>
 <table class="table">
   <thead>
     <tr>
