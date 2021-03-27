@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Edge Server</title>
+  <meta name="description" content="Fireeye Edge Server Dashboard" />
+
+  <link href="{{ url_for('static', filename='bulma.min.css') }}" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+  <nav class="navbar is-primary" role="navigation" aria-label="main navigation">
+    <div class="navbar-brand">
+      <a class="navbar-item has-text-weight-semibold ">
+        Edge Server
+      </a>
+    </div>
+  </nav>
+
+  <section class="section">
+    <div class="container">
+      <h3 class="is-size-3">Data</h3>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Device</th>
+            <th><abbr title="Temperature">Temp</abbr></th>
+            <th><abbr title="Light level">Light</abbr></th>
+            <th>Time Recorded</th>
+            <th><abbr title="Sent to cloud server">Sent</abbr></th>
+          </tr>
+        </thead>
+        {% for row in data %}
+        <tr>
+          <td>{{row['device']}}</td>
+          <td>{{row['temp']}}</td>
+          <td>{{row['light_level']}}</td>
+          <td>{{row['time_recorded'].strftime("%A, %d %b %Y, %-I:%M:%S %p")}}</td>
+          <td>{{row['sent_to_cloud']}}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </section>
+</body>
+
+</html>
