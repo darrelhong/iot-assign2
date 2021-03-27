@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h3 class="is-size-3">Data</h3>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Station</th>
+      <th>Device</th>
+      <th><abbr title="Temperature">Temp</abbr></th>
+      <th><abbr title="Light level">Light</abbr></th>
+      <th>Time Recorded</th>
+      <th><abbr title="Sent to cloud server">Sent</abbr></th>
+    </tr>
+  </thead>
+  {% for row in data %}
+  <tr>
+    <td>{{row['station']}}</td>
+    <td>{{row['device']}}</td>
+    <td>{{row['temp']}}</td>
+    <td>{{row['light_level']}}</td>
+    <td>{{row['time_recorded'].strftime("%A, %d %b %Y, %-I:%M:%S %p")}}</td>
+    <td>{{row['sent_to_cloud']}}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

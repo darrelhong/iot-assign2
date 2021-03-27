@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h3 class="is-size-3">Events</h3>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Station</th>
+      <th>Event</th>
+      <th>Time Recorded</th>
+    </tr>
+  </thead>
+  {% for row in data %}
+  <tr>
+    <td>{{row['station']}}</td>
+    <td>{{row['event_name']}}</td>
+    <td>{{row['time_recorded'].strftime("%A, %d %b %Y, %-I:%M:%S %p")}}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}
