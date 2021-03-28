@@ -104,10 +104,17 @@ def insert_fire_event(conn, station_name, event, time):
 
 # request helpers
 def send_event_cloud(station_name, event, time):
-    requests.post(
-        f"{CLOUD_HOST}/api/events/add",
-        json={"station": "alpha", "event_name": "fire outbreak", "time_recorded": time},
-    )
+    try:
+        requests.post(
+            f"{CLOUD_HOST}/api/events/add",
+            json={
+                "station": "alpha",
+                "event_name": "fire outbreak",
+                "time_recorded": time,
+            },
+        )
+    except requests.exceptions.RequestException:
+        pass
 
 
 def send_values_cloud(conn):
@@ -115,11 +122,16 @@ def send_values_cloud(conn):
     rv = cur.fetchall()
     cur.close()
     result = [dict(item, station=STATION_NAME) for item in rv]
-    r = requests.post(f"{CLOUD_HOST}/api/sensors/add", json={"rows": result})
-    if r.text == "Success":
-        cur = conn.execute("UPDATE edge SET sent_to_cloud = 1 WHERE sent_to_cloud = 0")
-        conn.commit()
-        cur.close()
+    try:
+        r = requests.post(f"{CLOUD_HOST}/api/sensors/add", json={"rows": result})
+        if r.text == "Success":
+            cur = conn.execute(
+                "UPDATE edge SET sent_to_cloud = 1 WHERE sent_to_cloud = 0"
+            )
+            conn.commit()
+            cur.close()
+    except requests.exceptions.RequestException:
+        pass
 
 try:
     # mqtt
