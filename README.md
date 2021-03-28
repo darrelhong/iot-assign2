@@ -1,3 +1,15 @@
+## Run
+
+Edge server
+```
+FLASK_APP=edge_server FLASK_ENV=development FLASK_RUN_HOST=0.0.0.0 flask run
+```
+
+Cloud server
+```
+FLASK_APP=cloud_server FLASK_ENV=development FLASK_RUN_HOST=0.0.0.0 FLASK_RUN_PORT=5001
+```
+
 ## Devices
 CE:E5:E1:2F:81:3E `vepag`
 
