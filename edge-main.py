@@ -4,14 +4,17 @@ import random
 import time
 from datetime import datetime
 import requests
-
+from gpiozero import PWMLED
 import paho.mqtt.client as mqtt
 
 from db import get_db
 
+
 TOPIC = "/fireeyeofthetiger"
 # 3 minutes 3 * 60  = 180
 # 10 minutes 10 * 60 = 600
+
+status_led = PWMLED(24)
 
 # store mqtt messages to be processed
 message_cache = []
@@ -133,6 +136,7 @@ def send_values_cloud(conn):
     except requests.exceptions.RequestException:
         pass
 
+
 try:
     # mqtt
     client_id = f"python-mqtt-{random.randint(0, 10000)}"
@@ -197,10 +201,17 @@ try:
                     try:
                         message = message_cache.pop().strip()
                         message_arr = message.split(" ")
-                        if message_arr[1] == "fire":
+                        station = message_arr[0]
+                        command = message_arr[1]
+                        if command == "fire":
                             sendCommand(message)
-                        elif message_arr[1] == "reset":
+                            if (station == STATION_NAME):
+                                status_led.on()
+                            else:
+                                status_led.blink(0.5, 0.5)
+                        elif command == "reset":
                             sendCommand(message)
+                            status_led.off()
                     except IndexError:
                         print("Error processing message")
 
