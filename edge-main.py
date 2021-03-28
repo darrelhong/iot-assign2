@@ -4,7 +4,6 @@ import random
 import time
 from datetime import datetime
 import requests
-from gpiozero import PWMLED
 import paho.mqtt.client as mqtt
 
 from db import get_db
@@ -14,7 +13,6 @@ TOPIC = "/fireeyeofthetiger"
 # 3 minutes 3 * 60  = 180
 # 10 minutes 10 * 60 = 600
 
-status_led = PWMLED(24)
 
 # store mqtt messages to be processed
 message_cache = []
@@ -49,7 +47,7 @@ parser.add_argument(
     type=int,
     default=600,
 )
-
+parser.add_argument("--rpi", help="Enable if using rpi", action="store_true")
 args = parser.parse_args()
 STATION_NAME = args.station
 TEMP_THRESHOLD = args.temp
@@ -58,6 +56,11 @@ CLOUD_HOST = args.cloudhost
 POLL_INTERVAL = args.pollinterval
 POST_INTERVAL = args.postinterval
 
+status_led = None
+if args.rpi:
+    from gpiozero import PWMLED
+
+    status_led = PWMLED(24)
 
 # serial helpers
 def sendCommand(command):
@@ -203,15 +206,22 @@ try:
                         message_arr = message.split(" ")
                         station = message_arr[0]
                         command = message_arr[1]
+                        message
                         if command == "fire":
+                            insert_fire_event(
+                                conn,
+                                station,
+                                "fire outbreak",
+                                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            )
                             sendCommand(message)
-                            if (station == STATION_NAME):
-                                status_led.on()
+                            if station == STATION_NAME:
+                                status_led and status_led.on()
                             else:
-                                status_led.blink(0.5, 0.5)
+                                status_led and status_led.blink(0.5, 0.5)
                         elif command == "reset":
                             sendCommand(message)
-                            status_led.off()
+                            status_led and status_led.off()
                     except IndexError:
                         print("Error processing message")
 
