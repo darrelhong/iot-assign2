@@ -27,6 +27,11 @@ def events():
         if "deactivate" in request.form:
             publish.single(TOPIC, "all reset", hostname="broker.emqx.io")
             return redirect(url_for("cloud.events"))
+        elif "activate" in request.form:
+            print(request.form["activate"])
+            station_name = request.form["activate"].strip()
+            publish.single(TOPIC, f"{station_name} fire", hostname="broker.emqx.io")
+            return redirect(url_for("cloud.events"))
     data = query_db("SELECT * FROM events")
     return render_template("events.html", data=data)
 

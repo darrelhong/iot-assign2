@@ -16,6 +16,7 @@
       <th>Station</th>
       <th>Event</th>
       <th>Time Recorded</th>
+      <th>Actions</th>
     </tr>
   </thead>
   {% for row in data %}
@@ -23,6 +24,13 @@
     <td>{{row['station']}}</td>
     <td>{{row['event_name']}}</td>
     <td>{{row['time_recorded'].strftime("%A, %d %b %Y, %-I:%M:%S %p")}}</td>
+    <td>
+      <form method="POST">
+        <input name="activate" value="{{row['station']}}" class="is-hidden" />
+        <button type="submit" class="button is-danger is-small is-rounded"
+          title="Activate fire alarm for station">Activate</button>
+      </form>
+    </td>
   </tr>
   {% endfor %}
 </table>
