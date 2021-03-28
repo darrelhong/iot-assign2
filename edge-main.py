@@ -10,8 +10,8 @@ import paho.mqtt.client as mqtt
 from db import get_db
 
 TOPIC = "/fireeyeofthetiger"
-POLL_INTERVAL = 3 * 60  # 3 minutes
-POST_INTERVAL = 10 * 60  # 10 minutes
+# 3 minutes 3 * 60  = 180
+# 10 minutes 10 * 60 = 600
 
 # store mqtt messages to be processed
 message_cache = []
@@ -34,12 +34,26 @@ parser.add_argument(
     type=str,
     default="http://localhost:5001",
 )
+parser.add_argument(
+    "--pollinterval",
+    help="Interval in seconds to poll nodes",
+    type=int,
+    default=180,
+)
+parser.add_argument(
+    "--postinterval",
+    help="Interval in seconds to send data to cloud server",
+    type=int,
+    default=600,
+)
 
 args = parser.parse_args()
 STATION_NAME = args.station
 TEMP_THRESHOLD = args.temp
 LIGHT_THRESHOLD = args.light
 CLOUD_HOST = args.cloudhost
+POLL_INTERVAL = args.pollinterval
+POST_INTERVAL = args.postinterval
 
 
 # serial helpers
