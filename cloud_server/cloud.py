@@ -26,11 +26,26 @@ def events():
     if request.method == "POST":
         if "deactivate" in request.form:
             publish.single(TOPIC, "all reset", hostname="broker.emqx.io")
+
+            with get_db() as conn:
+                cur = conn.cursor()
+                cur.execute(
+                    "INSERT INTO events(station, event_name) VALUES ('all','deactivate global alarm')"
+                )
+                conn.commit()
             return redirect(url_for("cloud.events"))
         elif "activate" in request.form:
-            print(request.form["activate"])
             station_name = request.form["activate"].strip()
             publish.single(TOPIC, f"{station_name} fire", hostname="broker.emqx.io")
+            with get_db() as conn:
+                cur = conn.cursor()
+                cur.execute(
+                    "INSERT INTO events(station, event_name) VALUES (?,'activate global alarm')",
+                    [station_name],
+                )
+                conn.commit()
+            print(request.form["activate"])
+
             return redirect(url_for("cloud.events"))
     data = query_db("SELECT * FROM events")
     return render_template("events.html", data=data)
