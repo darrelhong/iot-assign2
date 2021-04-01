@@ -206,7 +206,7 @@ try:
                 values = response.split("-")
                 if len(values) == 3:
                     temp = int(values[1])
-                    light_level = int(int(values[2]) / 255 * 100)
+                    light_level = int(int(values[2]) / 255 * 100) if values[0].startswith('edge') else values[2]
                     insert_sensor_data(
                         conn, f"{STATION_NAME} {values[0]}", temp, light_level
                     )
