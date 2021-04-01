@@ -124,8 +124,8 @@ def send_event_cloud(station_name, event, time):
         requests.post(
             f"{CLOUD_HOST}/api/events/add",
             json={
-                "station": "alpha",
-                "event_name": "fire outbreak",
+                "station": station_name,
+                "event_name": event,
                 "time_recorded": time,
             },
         )
