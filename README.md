@@ -1,5 +1,10 @@
 ## Run
 
+Main program
+```
+sudo python3 edge-main.py --rpi --ser --cloudhost=
+```
+
 Edge server
 ```
 FLASK_APP=edge_server FLASK_ENV=development FLASK_RUN_HOST=0.0.0.0 flask run
