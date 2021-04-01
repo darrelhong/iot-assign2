@@ -6,6 +6,7 @@ from datetime import datetime
 import requests
 import paho.mqtt.client as mqtt
 
+from Adafruit_BME280 import *
 from db import get_db
 
 
@@ -48,6 +49,7 @@ parser.add_argument(
     default=180,
 )
 parser.add_argument("--rpi", help="Enable if using rpi", action="store_true")
+parser.add_argument("--ser", help="Enable if using serials", action="store_true")
 args = parser.parse_args()
 STATION_NAME = args.station
 TEMP_THRESHOLD = args.temp
@@ -55,12 +57,20 @@ LIGHT_THRESHOLD = args.light
 CLOUD_HOST = args.cloudhost
 POLL_INTERVAL = args.pollinterval
 POST_INTERVAL = args.postinterval
+SERIAL = args.ser
 
 status_led = None
+sensor = None
+
 if args.rpi:
-    from gpiozero import PWMLED
+    from gpiozero import PWMLED, MCP3008
 
     status_led = PWMLED(24)
+
+    sensor = BME280(
+        t_mode=BME280_OSAMPLE_8, p_mode=BME280_OSAMPLE_8, h_mode=BME280_OSAMPLE_8
+    )
+    light_sensor = MCP3008(0)
 
 # serial helpers
 def sendCommand(command):
@@ -152,88 +162,95 @@ try:
     client.loop_start()
 
     # serial
-    ser = serial.Serial(port=args.port, baudrate=115200)
-    print("Listening serial on {}".format(args.port))
+    if SERIAL:
+        ser = serial.Serial(port=args.port, baudrate=115200)
+        print("Listening serial on {}".format(args.port))
 
-    sendCommand(f"{STATION_NAME} handshake")
+        sendCommand(f"{STATION_NAME} handshake")
 
-    print("waiting for response")
-    strMicrobitDevices = ""
-    while strMicrobitDevices == None or len(strMicrobitDevices) <= 0:
-        strMicrobitDevices = waitResponse()
+        print("waiting for response")
+        strMicrobitDevices = ""
+        while strMicrobitDevices == None or len(strMicrobitDevices) <= 0:
+            strMicrobitDevices = waitResponse()
+            time.sleep(0.1)
+
+        strMicrobitDevices = strMicrobitDevices.split("=")
+
+        if len(strMicrobitDevices[1]) > 0:
+            listMicrobitDevices = strMicrobitDevices[1].split(",")
+            if len(listMicrobitDevices) > 0:
+                for mb in listMicrobitDevices:
+                    print("Connected to micro:bit device {}...".format(mb))
+
+    pollTime = float("-inf")
+    postTime = float("-inf")
+    while True:
+        if time.time() - pollTime > POLL_INTERVAL:
+            pollTime = time.time()
+            responses = ""
+
+            if SERIAL:
+                sendCommand(f"{STATION_NAME} poll")
+                print("waiting for response")
+                while responses == None or len(responses) <= 0:
+                    responses = waitResponse()
+                    time.sleep(0.1)
+
+            responses = responses.split(",")
+            if args.rpi:
+                rpi_temp = round(sensor.read_temperature())
+                rpi_light_level = round(light_sensor.value * 100)
+                responses.append(f"edge_rpi-{rpi_temp}-{rpi_light_level}")
+
+            for response in responses:
+                values = response.split("-")
+                if len(values) == 3:
+                    temp = int(values[1])
+                    light_level = int(int(values[2]) / 255 * 100)
+                    insert_sensor_data(
+                        conn, f"{STATION_NAME} {values[0]}", temp, light_level
+                    )
+
+                    if temp > TEMP_THRESHOLD and light_level > LIGHT_THRESHOLD:
+                        print("fire outbreak detected")
+                        curr_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        event = "fire outbreak"
+                        SERIAL and sendCommand(f"{STATION_NAME} fire")
+                        insert_fire_event(conn, STATION_NAME, event, curr_time)
+                        send_event_cloud(STATION_NAME, event, curr_time)
+
+        while message_cache:
+            try:
+                message = message_cache.pop().strip()
+                message_arr = message.split(" ")
+                station = message_arr[0]
+                command = message_arr[1]
+                message
+                if command == "fire":
+                    insert_fire_event(
+                        conn,
+                        station,
+                        "fire outbreak",
+                        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    )
+                    SERIAL and sendCommand(message)
+                    if station == STATION_NAME:
+                        status_led and status_led.on()
+                    else:
+                        status_led and status_led.blink(0.5, 0.5)
+                elif command == "reset":
+                    SERIAL and sendCommand(message)
+                    status_led and status_led.off()
+            except IndexError:
+                print("Error processing message")
+
+        if time.time() - postTime > POST_INTERVAL:
+            postTime = time.time()
+            print("sending values to cloud")
+            send_values_cloud(conn)
+
         time.sleep(0.1)
 
-    strMicrobitDevices = strMicrobitDevices.split("=")
-
-    if len(strMicrobitDevices[1]) > 0:
-        listMicrobitDevices = strMicrobitDevices[1].split(",")
-        if len(listMicrobitDevices) > 0:
-            for mb in listMicrobitDevices:
-                print("Connected to micro:bit device {}...".format(mb))
-
-            pollTime = float("-inf")
-            postTime = float("-inf")
-            while True:
-                if time.time() - pollTime > POLL_INTERVAL:
-                    sendCommand(f"{STATION_NAME} poll")
-                    pollTime = time.time()
-
-                    print("waiting for response")
-                    responses = ""
-                    while responses == None or len(responses) <= 0:
-                        responses = waitResponse()
-                        time.sleep(0.1)
-
-                    responses = responses.split(",")
-
-                    for response in responses:
-                        values = response.split("-")
-                        temp = int(values[1])
-                        light_level = int(int(values[2]) / 255 * 100)
-                        insert_sensor_data(conn, f"{STATION_NAME} {values[0]}", temp, light_level)
-
-                        if temp > TEMP_THRESHOLD and light_level > LIGHT_THRESHOLD:
-                            print("fire outbreak detected")
-                            curr_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                            event = "fire outbreak"
-                            sendCommand(f"{STATION_NAME} fire")
-                            insert_fire_event(conn, STATION_NAME, event, curr_time)
-                            send_event_cloud(STATION_NAME, event, curr_time)
-
-                while message_cache:
-                    try:
-                        message = message_cache.pop().strip()
-                        message_arr = message.split(" ")
-                        station = message_arr[0]
-                        command = message_arr[1]
-                        message
-                        if command == "fire":
-                            insert_fire_event(
-                                conn,
-                                station,
-                                "fire outbreak",
-                                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                            )
-                            sendCommand(message)
-                            if station == STATION_NAME:
-                                status_led and status_led.on()
-                            else:
-                                status_led and status_led.blink(0.5, 0.5)
-                        elif command == "reset":
-                            sendCommand(message)
-                            status_led and status_led.off()
-                    except IndexError:
-                        print("Error processing message")
-
-                if time.time() - postTime > POST_INTERVAL:
-                    postTime = time.time()
-                    print("sending values to cloud")
-                    send_values_cloud(conn)
-
-                time.sleep(0.1)
-
-    else:
-        print("No nodes found")
 
 # while True:
 #     a = 1
