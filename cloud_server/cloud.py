@@ -17,7 +17,7 @@ def hello():
 
 @cloud.route("/")
 def index():
-    data = query_db("SELECT * FROM cloud")
+    data = query_db("SELECT * FROM cloud ORDER BY time_recorded DESC")
     return render_template("index.html", data=data)
 
 
@@ -47,7 +47,7 @@ def events():
             print(request.form["activate"])
 
             return redirect(url_for("cloud.events"))
-    data = query_db("SELECT * FROM events")
+    data = query_db("SELECT * FROM events ORDER BY time_recorded DESC")
     return render_template("events.html", data=data)
 
 

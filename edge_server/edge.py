@@ -13,11 +13,11 @@ def hello():
 
 @edge.route("/")
 def index():
-    data = query_db("SELECT * FROM edge")
+    data = query_db("SELECT * FROM edge ORDER BY time_recorded DESC")
     return render_template("index.html", data=data)
 
 
 @edge.route("/events")
 def events():
-    data = query_db("SELECT * FROM events")
+    data = query_db("SELECT * FROM events ORDER BY time_recorded DESC")
     return render_template("events.html", data=data)
