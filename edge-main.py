@@ -190,7 +190,7 @@ try:
                         values = response.split("-")
                         temp = int(values[1])
                         light_level = int(int(values[2]) / 255 * 100)
-                        insert_sensor_data(conn, values[0], temp, light_level)
+                        insert_sensor_data(conn, f"{STATION_NAME} {values[0]}", temp, light_level)
 
                         if temp > TEMP_THRESHOLD and light_level > LIGHT_THRESHOLD:
                             print("fire outbreak detected")
