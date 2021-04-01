@@ -213,6 +213,7 @@ try:
 
                     if temp > TEMP_THRESHOLD and light_level > LIGHT_THRESHOLD:
                         print("fire outbreak detected")
+                        status_led and status_led.on()
                         curr_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         event = "fire outbreak"
                         SERIAL and sendCommand(f"{STATION_NAME} fire")
