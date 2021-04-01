@@ -11,7 +11,7 @@ from db import get_db
 
 TOPIC = "/fireeyeofthetiger"
 # 3 minutes 3 * 60  = 180
-# 10 minutes 10 * 60 = 600
+# 1 minutes 1 * 60 = 60
 
 
 # store mqtt messages to be processed
@@ -27,8 +27,8 @@ parser.add_argument(
     default="/dev/ttyACM0",
 )
 parser.add_argument("--station", help="Edge station name", type=str, default="alpha")
-parser.add_argument("--temp", help="Temperature threshold", type=int, default=30)
-parser.add_argument("--light", help="Light level threshold", type=int, default=50)
+parser.add_argument("--temp", help="Temperature threshold", type=int, default=40)
+parser.add_argument("--light", help="Light level threshold", type=int, default=80)
 parser.add_argument(
     "--cloudhost",
     help="Cloud server hostname",
@@ -39,13 +39,13 @@ parser.add_argument(
     "--pollinterval",
     help="Interval in seconds to poll nodes",
     type=int,
-    default=180,
+    default=60,
 )
 parser.add_argument(
     "--postinterval",
     help="Interval in seconds to send data to cloud server",
     type=int,
-    default=600,
+    default=180,
 )
 parser.add_argument("--rpi", help="Enable if using rpi", action="store_true")
 args = parser.parse_args()
